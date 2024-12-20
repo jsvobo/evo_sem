@@ -23,7 +23,7 @@ class Node:
             + ": "
             + str(self.parity)
             + " thr: "
-            + str(self.threshold)
+            + "{:.3f}".format(self.threshold)
         )
 
     def randomly_init(self, feature_bounds, depth, max_depth):
@@ -44,6 +44,57 @@ class Node:
                 depth=depth + 1, attribute=None, threshold=None, parity=None
             )
             self.right.randomly_init(feature_bounds, depth + 1, max_depth)
+
+    def clever_init(self, feature_bounds, depth, max_depth, feature):
+        len_features = len(feature_bounds)
+        feature = (feature + 1) % len_features
+        self.attribute = feature
+
+        self.threshold = np.random.normal(
+            loc=(feature_bounds[feature][0] + feature_bounds[feature][1]) / 2,
+            scale=(feature_bounds[feature][1] - feature_bounds[feature][0]) / 6,
+        )
+        self.threshold = (
+            self.threshold
+            if self.threshold < feature_bounds[feature][1]
+            else feature_bounds[feature][1]
+        )
+        self.threshold = (
+            self.threshold
+            if self.threshold > feature_bounds[feature][0]
+            else feature_bounds[feature][0]
+        )
+        self.parity = np.random.choice([-1, 1])
+
+        if depth + 1 < max_depth:
+            self.left = Node(
+                depth=depth + 1, attribute=None, threshold=None, parity=None
+            )
+            self.left.clever_init(feature_bounds, depth + 1, max_depth, feature)
+
+            self.right = Node(
+                depth=depth + 1, attribute=None, threshold=None, parity=None
+            )
+            self.right.clever_init(feature_bounds, depth + 1, max_depth, feature)
+
+    def randomly_change_node(self, feature_bounds, depth, p_add=0.25):
+        feature = np.random.randint(0, len(feature_bounds))
+        self.attribute = feature
+        self.threshold = np.random.uniform(
+            feature_bounds[feature][0], feature_bounds[feature][1]
+        )
+        self.parity = np.random.choice([-1, 1])
+
+        if np.random.rand() < p_add:
+            self.left = Node(
+                depth=depth + 1, attribute=None, threshold=None, parity=None
+            )
+            self.left.randomly_change_node(feature_bounds, depth + 1, p_add * 0.9)
+
+            self.right = Node(
+                depth=depth + 1, attribute=None, threshold=None, parity=None
+            )
+            self.right.randomly_change_node(feature_bounds, depth + 1, p_add * 0.9)
 
     def infer(self, data, indices) -> np.ndarray:
         assert self.attribute is not None, "attribute is not set"
@@ -79,15 +130,27 @@ class TerminalNode:
     def infer(self, data, indices):
         return np.full(len(indices), self.value)  # all is one class
 
+    def __str__(self):
+        return "leaf: " + str(self.value)
+
 
 class Tree:
 
-    def __init__(self, feature_bounds, max_depth=4, random_seed=42):
+    def __init__(
+        self, feature_bounds, generation_type="basic", max_depth=3, p_add=0.25
+    ):
         # random initialization of the tree. randomly create depth 2 tree
-        np.random.seed(random_seed)
         self.root = Node(depth=0)
-        self.root.randomly_init(feature_bounds, 0, max_depth)  # depth = 3
         self.features_bounds = feature_bounds
+
+        if generation_type == "basic":
+            self.basic_generation(max_depth)
+        elif generation_type == "clever":
+            self.clever_generation(max_depth)
+        else:
+            self.coinflip_generation(p_add)
+
+        self.root.randomly_init(feature_bounds, 0, max_depth)  # depth = 3
 
     def inference(self, data):
         return self.root.infer(data, np.arange(len(data)))
@@ -99,3 +162,28 @@ class Tree:
         labels = dataset["labels"]
         accuracy = np.mean(inferred_cl == labels)
         return accuracy
+
+    def basic_generation(self, max_depth=4):
+        self.root.randomly_init(self.features_bounds, depth=0, max_depth=max_depth)
+
+    def coinflip_generation(self, p_add):
+        self.root.randomly_change_node(self.features_bounds, depth=0, p_add=p_add)
+
+    def clever_generation(self, max_depth=4):
+        start_feature = np.random.randint(0, len(self.features_bounds))
+        self.root.clever_init(
+            self.features_bounds, depth=0, max_depth=max_depth, feature=start_feature
+        )
+
+    def _traverse(self, node):
+        this_string = str(node)
+        if isinstance(node, Node):
+            left = str(node.left)
+            right = str(node.right)
+            print(this_string + " left: " + left + " right: " + right)
+
+            self._traverse(node.left)
+            self._traverse(node.right)
+
+    def print_tree_traverse(self):
+        self._traverse(self.root)
