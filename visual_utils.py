@@ -52,3 +52,11 @@ def visualise_tree_decision(tree: Tree, dataset: dict):
 
     else:
         print("Cannot visualize dataset with more than 2 dimensions.")
+
+
+def simple_graph(array, xlabel, ylabel, title):
+    plt.plot(range(len(array)), array)
+    plt.xlabel(xlabel)
+    plt.ylabel(ylabel)
+    plt.title(title)
+    plt.show()

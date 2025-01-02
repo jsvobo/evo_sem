@@ -24,7 +24,24 @@ class Node:
             + str(self.parity)
             + " thr: "
             + "{:.3f}".format(self.threshold)
+            + " depth: "
+            + str(self.depth)
         )
+
+    def copy(self):
+        new_node = Node(
+            depth=self.depth,
+            attribute=self.attribute,
+            threshold=self.threshold,
+            parity=self.parity,
+        )
+
+        if not self.left.is_terminal():
+            new_node.left = self.left.copy()
+        if not self.right.is_terminal():
+            new_node.right = self.right.copy()
+
+        return new_node
 
     def randomly_init(self, feature_bounds, depth, max_depth):
         feature = np.random.randint(0, len(feature_bounds))
@@ -34,7 +51,7 @@ class Node:
         )
         self.parity = np.random.choice([-1, 1])
 
-        if depth + 1 < max_depth:
+        if depth + 1 <= max_depth:
             self.left = Node(
                 depth=depth + 1, attribute=None, threshold=None, parity=None
             )
@@ -77,7 +94,7 @@ class Node:
             )
             self.right.clever_init(feature_bounds, depth + 1, max_depth, feature)
 
-    def randomly_change_node(self, feature_bounds, depth, p_add=0.25):
+    def coinflip_init(self, feature_bounds, depth, p_add=0.25):
         feature = np.random.randint(0, len(feature_bounds))
         self.attribute = feature
         self.threshold = np.random.uniform(
@@ -85,16 +102,16 @@ class Node:
         )
         self.parity = np.random.choice([-1, 1])
 
-        if np.random.rand() < p_add:
+        if np.random.rand() <= p_add:
             self.left = Node(
                 depth=depth + 1, attribute=None, threshold=None, parity=None
             )
-            self.left.randomly_change_node(feature_bounds, depth + 1, p_add * 0.9)
+            self.left.coinflip_init(feature_bounds, depth + 1, p_add * 0.9)
 
             self.right = Node(
                 depth=depth + 1, attribute=None, threshold=None, parity=None
             )
-            self.right.randomly_change_node(feature_bounds, depth + 1, p_add * 0.9)
+            self.right.coinflip_init(feature_bounds, depth + 1, p_add * 0.9)
 
     def infer(self, data, indices) -> np.ndarray:
         assert self.attribute is not None, "attribute is not set"
@@ -120,6 +137,17 @@ class Node:
 
         return returned_classes
 
+    def is_terminal(self):
+        return False
+
+    def get_subtree_depth(self):
+        return max(
+            self.depth, self.left.get_subtree_depth(), self.right.get_subtree_depth()
+        )
+
+    def get_subtree_size(self):
+        return 1 + self.left.get_subtree_size() + self.right.get_subtree_size()
+
 
 class TerminalNode:
 
@@ -132,6 +160,15 @@ class TerminalNode:
 
     def __str__(self):
         return "leaf: " + str(self.value)
+
+    def is_terminal(self):
+        return True
+
+    def get_subtree_depth(self):
+        return 0
+
+    def get_subtree_size(self):
+        return 0
 
 
 class Tree:
@@ -147,8 +184,10 @@ class Tree:
             self.basic_generation(max_depth)
         elif generation_type == "clever":
             self.clever_generation(max_depth)
-        else:
+        elif generation_type == "coinflip":
             self.coinflip_generation(p_add)
+        else:
+            raise ValueError("invalid generation type")
 
         self.root.randomly_init(feature_bounds, 0, max_depth)  # depth = 3
 
@@ -164,12 +203,15 @@ class Tree:
         return accuracy
 
     def basic_generation(self, max_depth=4):
+        assert max_depth > 0, "invalid max_depth"
         self.root.randomly_init(self.features_bounds, depth=0, max_depth=max_depth)
 
     def coinflip_generation(self, p_add):
-        self.root.randomly_change_node(self.features_bounds, depth=0, p_add=p_add)
+        assert 0 <= p_add <= 1, "invalid p_add"
+        self.root.coinflip_init(self.features_bounds, depth=0, p_add=p_add)
 
     def clever_generation(self, max_depth=4):
+        assert max_depth > 0, "invalid max_depth"
         start_feature = np.random.randint(0, len(self.features_bounds))
         self.root.clever_init(
             self.features_bounds, depth=0, max_depth=max_depth, feature=start_feature
@@ -187,3 +229,14 @@ class Tree:
 
     def print_tree_traverse(self):
         self._traverse(self.root)
+
+    def copy(self):
+        new_tree = Tree(self.features_bounds)
+        new_tree.root = self.root.copy()
+        return new_tree
+
+    def depth(self):
+        return self.root.get_subtree_depth()
+
+    def size(self):
+        return self.root.get_subtree_size()
