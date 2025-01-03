@@ -21,6 +21,7 @@ def ls_first_improvement(
     # where we store partial results from each iter.
     iterated_solutions = []
     every_fitness = []
+    every_solution = []
 
     # initialisation
     current_solution = Tree(
@@ -46,6 +47,7 @@ def ls_first_improvement(
         local_evals += 1
 
         every_fitness.append(current_fitness)
+        every_solution.append(current_solution)
 
         # perturb the current solution
         candidate_solution = perturbation_fn(current_solution)
@@ -79,4 +81,5 @@ def ls_first_improvement(
         "best_tree": overall_best,
         "best_fitness": overall_best_fitness,
         "all_fitnesses": every_fitness,
+        "all_solutions": every_solution,
     }
