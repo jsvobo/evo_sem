@@ -94,7 +94,7 @@ class Node:
             )
             self.right.clever_init(feature_bounds, depth + 1, max_depth, feature)
 
-    def coinflip_init(self, feature_bounds, depth, p_add=0.25):
+    def coinflip_init(self, feature_bounds, depth, p_add):
         feature = np.random.randint(0, len(feature_bounds))
         self.attribute = feature
         self.threshold = np.random.uniform(
@@ -176,7 +176,7 @@ class TerminalNode:
 class Tree:
 
     def __init__(
-        self, feature_bounds, generation_type="basic", max_depth=3, p_add=0.25
+        self, feature_bounds, generation_type="basic", max_depth=3, p_add=0.70
     ):
         # random initialization of the tree. randomly create depth 2 tree
         self.root = Node(depth=0)
@@ -202,7 +202,7 @@ class Tree:
         accuracy = np.mean(inferred_cl == labels)
         return accuracy
 
-    def basic_generation(self, max_depth=4):
+    def basic_generation(self, max_depth):
         assert max_depth > 0, "invalid max_depth"
         self.root.randomly_init(self.features_bounds, depth=0, max_depth=max_depth)
 
@@ -210,7 +210,7 @@ class Tree:
         assert 0 <= p_add <= 1, "invalid p_add"
         self.root.coinflip_init(self.features_bounds, depth=0, p_add=p_add)
 
-    def clever_generation(self, max_depth=4):
+    def clever_generation(self, max_depth):
         assert max_depth > 0, "invalid max_depth"
         start_feature = np.random.randint(0, len(self.features_bounds))
         self.root.clever_init(

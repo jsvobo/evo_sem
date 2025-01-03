@@ -1,4 +1,4 @@
-from decision_tree import Tree, Node
+from decision_tree import Tree, Node, TerminalNode
 import numpy as np
 
 
@@ -6,7 +6,7 @@ def _iterate_nodes(node, prob, function):
     # try to prog, AND iterate further!
 
     if np.random.rand() < prob:
-        print("Perturbing node: ", str(node))
+        # print("Perturbing node: ", str(node))
         node = function(node)
 
     if not node.left.is_terminal():
@@ -27,19 +27,6 @@ def _iterate_leaves(node, prob, function):
     node.left = _iterate_leaves(node.left, prob, function)
     node.right = _iterate_leaves(node.right, prob, function)
     return node
-
-
-def perturb_change_type(
-    tree,
-    prob_change,
-    feature_bounds,
-):
-    def change_type(node):
-        num_features = len(feature_bounds)
-        node.attribute = np.random.randint(0, num_features)
-        return node
-
-    _iterate_nodes(tree.root, prob_change, change_type)
 
 
 def perturb_change_value_normal(tree, prob_change, feature_bounds):
@@ -71,16 +58,16 @@ def perturb_randomly_add_to_leaf(tree, prob_add, feature_bounds):
 
 
 def perturb_randomly_prune(tree, prob_prune):
-    max_depth = tree.get_max_depth()
 
     def prune(node):
-        if node.is_terminal():
-            return
+        if node.depth <= 3:
+            return node
+
         node.left = TerminalNode(value=0)
         node.right = TerminalNode(value=1)
         return node
 
-    iterate_nodes(tree.root, prob_prune, prune)
+    _iterate_nodes(tree.root, prob_prune, prune)
 
 
 def randomly_grow(tree, feature_bounds, prob_add):
@@ -89,13 +76,10 @@ def randomly_grow(tree, feature_bounds, prob_add):
     return tree_copy
 
 
-def combined_perturb(
-    tree, feature_bounds, prob_change, prob_value, prob_add, prob_prune
-):
+def combined_perturb(tree, feature_bounds, prob_value, prob_add, prob_prune):
     tree = tree.copy()
 
     perturb_randomly_prune(tree, prob_prune)
-    perturb_change_type(tree, prob_change, feature_bounds)
     perturb_change_value_normal(tree, prob_value, feature_bounds)
     perturb_randomly_add_to_leaf(tree, prob_add, feature_bounds)
 

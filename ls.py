@@ -6,9 +6,11 @@ def ls_first_improvement(
     fitness_fn,
     initialisation_fn,
     perturbation_fn,
-    stop_cond=5000,
+    stop_cond=10_000,
     one_step_max=500,
     feature_bounds=[],
+    p_add=0.7,
+    max_depth=3,
 ):
     """
     Local search alg. using a given fitness function, initialisation function, perturbation function and distance matrix.
@@ -18,10 +20,14 @@ def ls_first_improvement(
 
     # where we store partial results from each iter.
     iterated_solutions = []
+    every_fitness = []
 
     # initialisation
     current_solution = Tree(
-        feature_bounds, generation_type=initialisation_fn, max_depth=4, p_add=0.5
+        feature_bounds,
+        generation_type=initialisation_fn,
+        max_depth=max_depth,
+        p_add=p_add,
     )  # curried for the specific size beforehand!
     current_fitness = fitness_fn(current_solution)
     iteration = 0
@@ -39,12 +45,12 @@ def ls_first_improvement(
         evals += 1
         local_evals += 1
 
+        every_fitness.append(current_fitness)
+
         # perturb the current solution
         candidate_solution = perturbation_fn(current_solution)
         # calculate and compare fitness
         candidate_fitness = fitness_fn(candidate_solution)
-        # print(current_solution.depth(), candidate_solution.depth())
-        # print(current_fitness, candidate_fitness)
 
         # update the overall best solution
         if candidate_fitness > overall_best_fitness:
@@ -54,8 +60,7 @@ def ls_first_improvement(
         # store and go to the next iteration, even when going to the worse
         if candidate_fitness > current_fitness or local_evals >= one_step_max:
             current_solution = candidate_solution
-            # print("Iteration: ", iteration)
-            # current_solution.print_tree_traverse()
+
             current_fitness = candidate_fitness
             iterated_solutions.append(
                 {
@@ -69,14 +74,9 @@ def ls_first_improvement(
             iteration += 1
             local_evals = 0
 
-    best_solution_globally = None
-    best_fitness_globally = -np.inf
-    for solution in iterated_solutions:
-        if solution["fitness"] > best_fitness_globally:
-            best_solution_globally = solution["solution"]
-            best_fitness_globally = solution["fitness"]
     return {
         "history": iterated_solutions,
-        "best_tree": best_solution_globally,
-        "best_fitness": best_fitness_globally,
+        "best_tree": overall_best,
+        "best_fitness": overall_best_fitness,
+        "all_fitnesses": every_fitness,
     }
