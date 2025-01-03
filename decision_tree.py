@@ -83,7 +83,7 @@ class Node:
         )
         self.parity = np.random.choice([-1, 1])
 
-        if depth + 1 < max_depth:
+        if depth + 1 <= max_depth:
             self.left = Node(
                 depth=depth + 1, attribute=None, threshold=None, parity=None
             )
@@ -102,7 +102,9 @@ class Node:
         )
         self.parity = np.random.choice([-1, 1])
 
-        if np.random.rand() <= p_add:
+        prog = np.random.rand()
+        # print("progs?", prog, " against: ", p_add, " depth: ", depth)
+        if prog <= p_add:
             self.left = Node(
                 depth=depth + 1, attribute=None, threshold=None, parity=None
             )
@@ -188,8 +190,6 @@ class Tree:
             self.coinflip_generation(p_add)
         else:
             raise ValueError("invalid generation type")
-
-        self.root.randomly_init(feature_bounds, 0, max_depth)  # depth = 3
 
     def inference(self, data):
         return self.root.infer(data, np.arange(len(data)))
