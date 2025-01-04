@@ -69,14 +69,10 @@ def generate_multidimensional_dataset(n_samples=1000, n_features=50, random_seed
 def visualize_small_dataset(data, labels, filename="small_dataset.png"):
     plt.figure(figsize=(6, 6))
     first = data[labels == 0]
-    plt.scatter(
-        first["feature_0"], first["feature_1"], marker="x", color="r", s=70, alpha=0.9
-    )
+    plt.scatter(first["feature_0"], first["feature_1"], edgecolor="k", color="blue")
 
     second = data[labels == 1]
-    plt.scatter(
-        second["feature_0"], second["feature_1"], marker="o", color="b", alpha=0.6
-    )
+    plt.scatter(second["feature_0"], second["feature_1"], edgecolor="k", color="red")
 
     plt.axhline(0, color="k", lw=0.7)
     plt.axvline(0, color="k", lw=0.7)
@@ -98,8 +94,8 @@ def visualize_multidimensional_dataset(data, labels):
 
     first = data_2D[labels == 0]
     second = data_2D[labels == 1]
-    plt.scatter(first[:, 0], first[:, 1], marker="x", color="r", s=70, alpha=0.9)
-    plt.scatter(second[:, 0], second[:, 1], marker="o", color="b", alpha=0.6)
+    plt.scatter(first[:, 0], first[:, 1], edgecolor="k", color="blue")
+    plt.scatter(second[:, 0], second[:, 1], edgecolor="k", color="red")
 
     plt.axhline(0, color="k", lw=0.7)
     plt.axvline(0, color="k", lw=0.7)
